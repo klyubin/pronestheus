@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -152,7 +153,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		ch <- prometheus.MustNewConstMetric(c.metrics.ambientTemp, prometheus.GaugeValue, therm.AmbientTemp, labels...)
-		ch <- prometheus.MustNewConstMetric(c.metrics.setpointTemp, prometheus.GaugeValue, therm.SetpointTemp, labels...)
+		if !math.IsNaN(therm.SetpointTemp) {
+			ch <- prometheus.MustNewConstMetric(c.metrics.setpointTemp, prometheus.GaugeValue, therm.SetpointTemp, labels...)
+		}
 		ch <- prometheus.MustNewConstMetric(c.metrics.humidity, prometheus.GaugeValue, therm.Humidity, labels...)
 		ch <- prometheus.MustNewConstMetric(c.metrics.heating, prometheus.GaugeValue, b2f(therm.Status == "HEATING"), labels...)
 	}
@@ -182,12 +185,19 @@ func (c *Collector) getNestReadings() (thermostats []*Thermostat, err error) {
 			return true
 		}
 
+		heatSetPoint := math.NaN()
+		// The set point for heating might not be present, for example, when the
+		// thermostat's mode is OFF or COOL.
+		if v := device.Get("traits.sdm\\.devices\\.traits\\.ThermostatTemperatureSetpoint.heatCelsius"); v.Exists() {
+			heatSetPoint = v.Float()
+		}
+
 		thermostat := Thermostat{
 			ID:           device.Get("name").String(),
 			Label:        device.Get("traits.sdm\\.devices\\.traits\\.Info.customName").String(),
 			Online:       device.Get("traits.sdm\\.devices\\.traits\\.Connectivity.status").String() == "ONLINE",
 			AmbientTemp:  device.Get("traits.sdm\\.devices\\.traits\\.Temperature.ambientTemperatureCelsius").Float(),
-			SetpointTemp: device.Get("traits.sdm\\.devices\\.traits\\.ThermostatTemperatureSetpoint.heatCelsius").Float(),
+			SetpointTemp: heatSetPoint,
 			Humidity:     device.Get("traits.sdm\\.devices\\.traits\\.Humidity.ambientHumidityPercent").Float(),
 			Status:       device.Get("traits.sdm\\.devices\\.traits\\.ThermostatHvac.status").String(),
 		}
