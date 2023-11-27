@@ -5,7 +5,7 @@ import (
 	"os"
 	"pronestheus/pkg"
 
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/kingpin/v2"
 )
 
 // Version metadata set by ldflags during the build.
