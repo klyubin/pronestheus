@@ -1,5 +1,5 @@
 image: 
-  repository: registry.gitlab.com/grdl/pronestheus
+  repository: registry.gitlab.com/klyubin/pronestheus
   tag: latest
 
 # Based on NodeExporter Helm chart (https://github.com/helm/charts/blob/master/stable/prometheus-node-exporter/values.yaml)

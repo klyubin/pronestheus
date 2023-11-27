@@ -21,7 +21,7 @@ services:
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/pronestheus.json
 
   pronestheus:  
-    image: grdl/pronestheus:latest
+    image: klyubin/pronestheus:latest
     ports:
       - "9777:9777"
     env_file:

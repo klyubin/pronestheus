@@ -1,7 +1,9 @@
 # ProNestheus
 
-![build](https://github.com/grdl/pronestheus/workflows/build/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/grdl/pronestheus)](https://goreportcard.com/report/github.com/grdl/pronestheus)
+This is a fork of [grdl/pronestheus](https://github.com/grdl/pronestheus) where the maintainers haven't been responding to pull requests since Dec 2022.
+
+![build](https://github.com/klyubin/pronestheus/workflows/build/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/klyubin/pronestheus)](https://goreportcard.com/report/github.com/klyubin/pronestheus)
 
 A Prometheus exporter for the [Nest Learning Thermostat](https://nest.com/). Exposes metrics about your thermostats and the weather in your current location.
 
@@ -13,12 +15,12 @@ Works with the new [Google Smart Device Management API](https://developers.googl
 
 ### Binary download
 
-Grab the Linux, macOS or Windows executable from the [latest release](https://github.com/grdl/pronestheus/releases/latest).
+Grab the Linux, macOS or Windows executable from the [latest release](https://github.com/klyubin/pronestheus/releases/latest).
 
 ### Docker image
 
 ```
-docker run -p 9777:9777 -e "PRONESTHEUS_NEST_TOKEN=xxx" grdl/pronestheus
+docker run -p 9777:9777 -e "PRONESTHEUS_NEST_TOKEN=xxx" klyubin/pronestheus
 ```
 
 ### Helm chart
