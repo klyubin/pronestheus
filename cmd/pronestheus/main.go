@@ -24,6 +24,8 @@ var cfg = &pkg.ExporterConfig{
 	NestOAuthClientSecret: kingpin.Flag("nest-client-secret", "OAuth2 Client Secret.").String(),
 	NestProjectID:         kingpin.Flag("nest-project-id", "Device Access Project ID.").String(),
 	NestRefreshToken:      kingpin.Flag("nest-refresh-token", "Refresh token").String(),
+	NestGoogleAuthURL:     kingpin.Flag("nest-google-auth-url", "Google auth URL for access to the Nest app. Optional: only needed for scraping Nest Temperature Sensors and the outside temperatures reported by the Nest App.").String(),
+	NestGoogleAuthCookies: kingpin.Flag("nest-google-auth-cookies", "Cookies for the Google auth URL for access to the Nest app. Optional: only needed for scraping Nest Temperature Sensors and the outside temperatures reported by the Nest App.").String(),
 	NestLabelSpaceToDash:  kingpin.Flag("nest-label-spaces-to-dashes", "Replace spaces with dashes in Nest thermostat label").Bool(),
 	WeatherURL:            kingpin.Flag("owm-url", "The OpenWeatherMap API URL.").Default("http://api.openweathermap.org/data/2.5/weather").String(),
 	WeatherToken:          kingpin.Flag("owm-auth", "The authorization token for OpenWeatherMap API.").String(),
