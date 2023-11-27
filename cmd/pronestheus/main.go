@@ -24,6 +24,7 @@ var cfg = &pkg.ExporterConfig{
 	NestOAuthClientSecret: kingpin.Flag("nest-client-secret", "OAuth2 Client Secret.").String(),
 	NestProjectID:         kingpin.Flag("nest-project-id", "Device Access Project ID.").String(),
 	NestRefreshToken:      kingpin.Flag("nest-refresh-token", "Refresh token").String(),
+	NestLabelSpaceToDash:  kingpin.Flag("nest-label-spaces-to-dashes", "Replace spaces with dashes in Nest thermostat label").Bool(),
 	WeatherURL:            kingpin.Flag("owm-url", "The OpenWeatherMap API URL.").Default("http://api.openweathermap.org/data/2.5/weather").String(),
 	WeatherToken:          kingpin.Flag("owm-auth", "The authorization token for OpenWeatherMap API.").String(),
 	WeatherLocation:       kingpin.Flag("owm-location", "The location ID for OpenWeatherMap API. Defaults to Amsterdam.").Default("2759794").String(),
