@@ -26,6 +26,7 @@ type ExporterConfig struct {
 	NestOAuthToken        *oauth2.Token // Only used to mock a dummy token in tests
 	NestProjectID         *string
 	NestRefreshToken      *string
+	NestLabelSpaceToDash  *bool
 	WeatherLocation       *string
 	WeatherURL            *string
 	WeatherToken          *string
@@ -79,15 +80,20 @@ func (e *Exporter) Run() error {
 }
 
 func registerNestCollector(cfg *ExporterConfig) error {
+	replaceSpacesWithDashesInLabel := false
+	if cfg.NestLabelSpaceToDash != nil {
+		replaceSpacesWithDashesInLabel = *cfg.NestLabelSpaceToDash
+	}
 	nestConfig := nest.Config{
-		Logger:            logger,
-		Timeout:           *cfg.Timeout,
-		APIURL:            *cfg.NestURL,
-		OAuthClientID:     *cfg.NestOAuthClientID,
-		OAuthClientSecret: *cfg.NestOAuthClientSecret,
-		RefreshToken:      *cfg.NestRefreshToken,
-		ProjectID:         *cfg.NestProjectID,
-		OAuthToken:        cfg.NestOAuthToken,
+		Logger:                         logger,
+		Timeout:                        *cfg.Timeout,
+		APIURL:                         *cfg.NestURL,
+		OAuthClientID:                  *cfg.NestOAuthClientID,
+		OAuthClientSecret:              *cfg.NestOAuthClientSecret,
+		RefreshToken:                   *cfg.NestRefreshToken,
+		ProjectID:                      *cfg.NestProjectID,
+		OAuthToken:                     cfg.NestOAuthToken,
+		ReplaceSpacesWithDashesInLabel: replaceSpacesWithDashesInLabel,
 	}
 
 	nestCollector, err := nest.New(nestConfig)

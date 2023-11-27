@@ -43,22 +43,24 @@ type Thermostat struct {
 
 // Config provides the configuration necessary to create the Collector.
 type Config struct {
-	Logger            log.Logger
-	Timeout           int
-	APIURL            string
-	OAuthClientID     string
-	OAuthClientSecret string
-	RefreshToken      string
-	ProjectID         string
-	OAuthToken        *oauth2.Token
+	Logger                         log.Logger
+	Timeout                        int
+	APIURL                         string
+	OAuthClientID                  string
+	OAuthClientSecret              string
+	RefreshToken                   string
+	ProjectID                      string
+	OAuthToken                     *oauth2.Token
+	ReplaceSpacesWithDashesInLabel bool
 }
 
 // Collector implements the Collector interface, collecting thermostats data from Nest API.
 type Collector struct {
-	client  *http.Client
-	url     string
-	logger  log.Logger
-	metrics *Metrics
+	client                         *http.Client
+	url                            string
+	logger                         log.Logger
+	metrics                        *Metrics
+	replaceSpacesWithDashesInLabel bool
 }
 
 // Metrics contains the metrics collected by the Collector.
@@ -97,10 +99,11 @@ func New(cfg Config) (*Collector, error) {
 	client.Timeout = time.Duration(cfg.Timeout) * time.Millisecond
 
 	collector := &Collector{
-		client:  client,
-		url:     strings.TrimRight(cfg.APIURL, "/") + "/enterprises/" + cfg.ProjectID + "/devices/",
-		logger:  cfg.Logger,
-		metrics: buildMetrics(),
+		client:                         client,
+		url:                            strings.TrimRight(cfg.APIURL, "/") + "/enterprises/" + cfg.ProjectID + "/devices/",
+		logger:                         cfg.Logger,
+		metrics:                        buildMetrics(),
+		replaceSpacesWithDashesInLabel: cfg.ReplaceSpacesWithDashesInLabel,
 	}
 
 	return collector, nil
@@ -142,7 +145,11 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(c.metrics.up, prometheus.GaugeValue, 1)
 
 	for _, therm := range thermostats {
-		labels := []string{therm.ID, therm.Room, strings.Replace(therm.Label, " ", "-", -1)}
+		thermLabel := therm.Label
+		if c.replaceSpacesWithDashesInLabel {
+			thermLabel = strings.Replace(thermLabel, " ", "-", -1)
+		}
+		labels := []string{therm.ID, therm.Room, thermLabel}
 
 		ch <- prometheus.MustNewConstMetric(c.metrics.online, prometheus.GaugeValue, b2f(therm.Online), labels...)
 
