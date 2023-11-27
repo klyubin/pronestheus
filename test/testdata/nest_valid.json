@@ -16,10 +16,12 @@
         },
         "sdm.devices.traits.Fan": {},
         "sdm.devices.traits.ThermostatMode": {
-          "mode": "HEAT",
+          "mode": "HEATCOOL",
           "availableModes": [
+            "COOL",
             "HEAT",
-            "OFF"
+            "HEATCOOL",
+            "OFF",
           ]
         },
         "sdm.devices.traits.ThermostatEco": {
@@ -38,7 +40,8 @@
           "temperatureScale": "CELSIUS"
         },
         "sdm.devices.traits.ThermostatTemperatureSetpoint": {
-          "heatCelsius": 19.17838
+          "coolCelsius": 26.5,
+          "heatCelsius": 19.17838,
         },
         "sdm.devices.traits.Temperature": {
           "ambientTemperatureCelsius": 20.23999

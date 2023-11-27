@@ -31,14 +31,15 @@ var (
 
 // Thermostat stores thermostat data received from Nest API.
 type Thermostat struct {
-	ID           string
-	Room         string
-	Label        string
-	Online       bool
-	AmbientTemp  float64
-	SetpointTemp float64
-	Humidity     float64
-	Status       string
+	ID               string
+	Room             string
+	Label            string
+	Online           bool
+	AmbientTemp      float64
+	HeatSetpointTemp float64
+	CoolSetpointTemp float64
+	Humidity         float64
+	Status           string
 }
 
 // Config provides the configuration necessary to create the Collector.
@@ -65,12 +66,15 @@ type Collector struct {
 
 // Metrics contains the metrics collected by the Collector.
 type Metrics struct {
-	up           *prometheus.Desc
-	online       *prometheus.Desc
-	ambientTemp  *prometheus.Desc
-	setpointTemp *prometheus.Desc
-	humidity     *prometheus.Desc
-	heating      *prometheus.Desc
+	up               *prometheus.Desc
+	online           *prometheus.Desc
+	ambientTemp      *prometheus.Desc
+	setpointTemp     *prometheus.Desc
+	heatSetpointTemp *prometheus.Desc
+	coolSetpointTemp *prometheus.Desc
+	humidity         *prometheus.Desc
+	heating          *prometheus.Desc
+	cooling          *prometheus.Desc
 }
 
 // New creates a Collector using the given Config.
@@ -112,12 +116,16 @@ func New(cfg Config) (*Collector, error) {
 func buildMetrics() *Metrics {
 	var nestLabels = []string{"id", "room", "label"}
 	return &Metrics{
-		up:           prometheus.NewDesc(strings.Join([]string{"nest", "up"}, "_"), "Was talking to Nest API successful.", nil, nil),
-		online:       prometheus.NewDesc(strings.Join([]string{"nest", "online"}, "_"), "Is the thermostat online.", nestLabels, nil),
-		ambientTemp:  prometheus.NewDesc(strings.Join([]string{"nest", "ambient", "temperature", "celsius"}, "_"), "Inside temperature.", nestLabels, nil),
-		setpointTemp: prometheus.NewDesc(strings.Join([]string{"nest", "setpoint", "temperature", "celsius"}, "_"), "Setpoint temperature.", nestLabels, nil),
-		humidity:     prometheus.NewDesc(strings.Join([]string{"nest", "humidity", "percent"}, "_"), "Inside humidity.", nestLabels, nil),
-		heating:      prometheus.NewDesc(strings.Join([]string{"nest", "heating"}, "_"), "Is thermostat heating.", nestLabels, nil),
+		up:          prometheus.NewDesc(strings.Join([]string{"nest", "up"}, "_"), "Was talking to Nest API successful.", nil, nil),
+		online:      prometheus.NewDesc(strings.Join([]string{"nest", "online"}, "_"), "Is the thermostat online.", nestLabels, nil),
+		ambientTemp: prometheus.NewDesc(strings.Join([]string{"nest", "ambient", "temperature", "celsius"}, "_"), "Inside temperature.", nestLabels, nil),
+		// nest_setpoint_temperature_celsius is here for backward-compatibility with grdl/pronestheus
+		setpointTemp:     prometheus.NewDesc(strings.Join([]string{"nest", "setpoint", "temperature", "celsius"}, "_"), "Heating setpoint temperature.", nestLabels, nil),
+		heatSetpointTemp: prometheus.NewDesc(strings.Join([]string{"nest", "heat", "setpoint", "temperature", "celsius"}, "_"), "Heating setpoint temperature.", nestLabels, nil),
+		coolSetpointTemp: prometheus.NewDesc(strings.Join([]string{"nest", "cool", "setpoint", "temperature", "celsius"}, "_"), "Cooling setpoint temperature.", nestLabels, nil),
+		humidity:         prometheus.NewDesc(strings.Join([]string{"nest", "humidity", "percent"}, "_"), "Inside humidity.", nestLabels, nil),
+		heating:          prometheus.NewDesc(strings.Join([]string{"nest", "heating"}, "_"), "Is thermostat heating.", nestLabels, nil),
+		cooling:          prometheus.NewDesc(strings.Join([]string{"nest", "cooling"}, "_"), "Is thermostat cooling.", nestLabels, nil),
 	}
 }
 
@@ -127,8 +135,11 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.metrics.online
 	ch <- c.metrics.ambientTemp
 	ch <- c.metrics.setpointTemp
+	ch <- c.metrics.heatSetpointTemp
+	ch <- c.metrics.coolSetpointTemp
 	ch <- c.metrics.humidity
 	ch <- c.metrics.heating
+	ch <- c.metrics.cooling
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -161,11 +172,16 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		ch <- prometheus.MustNewConstMetric(c.metrics.ambientTemp, prometheus.GaugeValue, therm.AmbientTemp, labels...)
-		if !math.IsNaN(therm.SetpointTemp) {
-			ch <- prometheus.MustNewConstMetric(c.metrics.setpointTemp, prometheus.GaugeValue, therm.SetpointTemp, labels...)
+		if !math.IsNaN(therm.HeatSetpointTemp) {
+			ch <- prometheus.MustNewConstMetric(c.metrics.setpointTemp, prometheus.GaugeValue, therm.HeatSetpointTemp, labels...)
+			ch <- prometheus.MustNewConstMetric(c.metrics.heatSetpointTemp, prometheus.GaugeValue, therm.HeatSetpointTemp, labels...)
+		}
+		if !math.IsNaN(therm.CoolSetpointTemp) {
+			ch <- prometheus.MustNewConstMetric(c.metrics.coolSetpointTemp, prometheus.GaugeValue, therm.CoolSetpointTemp, labels...)
 		}
 		ch <- prometheus.MustNewConstMetric(c.metrics.humidity, prometheus.GaugeValue, therm.Humidity, labels...)
 		ch <- prometheus.MustNewConstMetric(c.metrics.heating, prometheus.GaugeValue, b2f(therm.Status == "HEATING"), labels...)
+		ch <- prometheus.MustNewConstMetric(c.metrics.cooling, prometheus.GaugeValue, b2f(therm.Status == "COOLING"), labels...)
 	}
 }
 
@@ -200,6 +216,13 @@ func (c *Collector) getNestReadings() (thermostats []*Thermostat, err error) {
 			heatSetPoint = v.Float()
 		}
 
+		coolSetPoint := math.NaN()
+		// The set point for cooling might not be present, for example, when the
+		// thermostat's mode is OFF or HEAT.
+		if v := device.Get("traits.sdm\\.devices\\.traits\\.ThermostatTemperatureSetpoint.coolCelsius"); v.Exists() {
+			coolSetPoint = v.Float()
+		}
+
 		room := ""
 		// We determine the room from the list of parent relationships of this
 		// thermostat. We're explicitly looking for relationships of type
@@ -216,14 +239,15 @@ func (c *Collector) getNestReadings() (thermostats []*Thermostat, err error) {
 		}
 
 		thermostat := Thermostat{
-			ID:           device.Get("name").String(),
-			Room:         room,
-			Label:        device.Get("traits.sdm\\.devices\\.traits\\.Info.customName").String(),
-			Online:       device.Get("traits.sdm\\.devices\\.traits\\.Connectivity.status").String() == "ONLINE",
-			AmbientTemp:  device.Get("traits.sdm\\.devices\\.traits\\.Temperature.ambientTemperatureCelsius").Float(),
-			SetpointTemp: heatSetPoint,
-			Humidity:     device.Get("traits.sdm\\.devices\\.traits\\.Humidity.ambientHumidityPercent").Float(),
-			Status:       device.Get("traits.sdm\\.devices\\.traits\\.ThermostatHvac.status").String(),
+			ID:               device.Get("name").String(),
+			Room:             room,
+			Label:            device.Get("traits.sdm\\.devices\\.traits\\.Info.customName").String(),
+			Online:           device.Get("traits.sdm\\.devices\\.traits\\.Connectivity.status").String() == "ONLINE",
+			AmbientTemp:      device.Get("traits.sdm\\.devices\\.traits\\.Temperature.ambientTemperatureCelsius").Float(),
+			HeatSetpointTemp: heatSetPoint,
+			CoolSetpointTemp: coolSetPoint,
+			Humidity:         device.Get("traits.sdm\\.devices\\.traits\\.Humidity.ambientHumidityPercent").Float(),
+			Status:           device.Get("traits.sdm\\.devices\\.traits\\.ThermostatHvac.status").String(),
 		}
 
 		thermostats = append(thermostats, &thermostat)
