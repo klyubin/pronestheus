@@ -60,6 +60,9 @@ Flags:
                                  Device Access Project ID.
       --nest-refresh-token=NEST-REFRESH-TOKEN  
                                  Refresh token
+      --[no-]nest-label-spaces-to-dashes
+                                 Whether to replace spaces with dashes in Nest thermostat label.
+                                 Default: do not replace.
       --owm-url="http://api.openweathermap.org/data/2.5/weather"  
                                  The OpenWeatherMap API URL.
       --owm-auth=OWM-AUTH        The authorization token for OpenWeatherMap API.
