@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+/cmd/pronestheus/pronestheus
 
 # Test binary, built with `go test -c`
 *.test
