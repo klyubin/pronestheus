@@ -21,6 +21,7 @@ func TestServerResponses(t *testing.T) {
 			wantErr: nil,
 			want: &Thermostat{
 				ID:           "enterprises/PROJECT_ID/devices/DEVICE_ID",
+				Room:         "Living Room",
 				Label:        "Custom Name",
 				Online:       true,
 				AmbientTemp:  float64(20.23999),
