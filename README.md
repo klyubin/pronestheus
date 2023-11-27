@@ -97,12 +97,21 @@ nest_ambient_temperature_celsius{id="abcd1234",label="Living Room",room="Living 
 # HELP nest_heating Is thermostat heating.
 # TYPE nest_heating gauge
 nest_heating{id="abcd1234",label="Living Room",room="Living Room"} 0
+# HELP nest_cooling Is thermostat cooling.
+# TYPE nest_cooling gauge
+nest_cooling{id="abcd1234",label="Living Room",room="Living Room"} 1
 # HELP nest_humidity_percent Inside humidity.
 # TYPE nest_humidity_percent gauge
 nest_humidity_percent{id="abcd1234",label="Living Room",room="Living Room"} 55
-# HELP nest_setpoint_temperature_celsius Setpoint temperature.
+# HELP nest_setpoint_temperature_celsius Heating setpoint temperature.
 # TYPE nest_setpoint_temperature_celsius gauge
 nest_setpoint_temperature_celsius{id="abcd1234",label="Living Room",room="Living Room"} 18
+# HELP nest_heat_setpoint_temperature_celsius Heating setpoint temperature.
+# TYPE nest_heat_setpoint_temperature_celsius gauge
+nest_heat_setpoint_temperature_celsius{id="abcd1234",label="Living Room",room="Living Room"} 18
+# HELP nest_cool_setpoint_temperature_celsius Cooling setpoint temperature.
+# TYPE nest_cool_setpoint_temperature_celsius gauge
+nest_cool_setpoint_temperature_celsius{id="abcd1234",label="Living Room",room="Living Room"} 24
 # HELP nest_online Is the thermostat online.
 # TYPE nest_online gauge
 nest_online{id="abcd1234",label="Living Room",room="Living Room"} 1
