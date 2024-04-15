@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"errors"
 	"net/http"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"pronestheus/pkg/collectors/nest"
+	"pronestheus/pkg/collectors/nestapp"
 	"pronestheus/pkg/collectors/weather"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,6 +32,8 @@ type ExporterConfig struct {
 	WeatherLocation       *string
 	WeatherURL            *string
 	WeatherToken          *string
+	NestGoogleAuthURL     *string
+	NestGoogleAuthCookies *string
 }
 
 // Exporter is a Prometheus exporter.
@@ -51,6 +55,10 @@ func NewExporter(cfg *ExporterConfig) (*Exporter, error) {
 	}
 
 	if err := registerWeatherCollector(cfg); err != nil {
+		return nil, err
+	}
+
+	if err := registerNestAppCollector(cfg); err != nil {
 		return nil, err
 	}
 
@@ -124,4 +132,30 @@ func registerWeatherCollector(cfg *ExporterConfig) error {
 	}
 
 	return prometheus.Register(weatherCollector)
+}
+
+func registerNestAppCollector(cfg *ExporterConfig) error {
+	if cfg.NestGoogleAuthURL == nil || *cfg.NestGoogleAuthURL == "" {
+		if cfg.NestGoogleAuthCookies != nil && *cfg.NestGoogleAuthCookies != "" {
+			return errors.New("Cookies for Nest app provided, but the Google authentication URL not provided")
+		}
+		// This feature is not enabled
+		return nil
+	} else if cfg.NestGoogleAuthCookies == nil || *cfg.NestGoogleAuthCookies == "" {
+		return errors.New("Google auth URL for the Nest app provided, but no cookies provided")
+	}
+
+	config := nestapp.Config{
+		Logger:      logger,
+		Timeout:     *cfg.Timeout,
+		AuthURL:     *cfg.NestGoogleAuthURL,
+		AuthCookies: *cfg.NestGoogleAuthCookies,
+	}
+
+	collector, err := nestapp.New(config)
+	if err != nil {
+		return err
+	}
+
+	return prometheus.Register(collector)
 }
